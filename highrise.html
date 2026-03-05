@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FearLess — Heights: Highrise Rooftop</title>
+<script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --void:  #020608;
+    --deep:  #060c14;
+    --panel: #08111e;
+    --rim:   #102030;
+    --mist:  #1a3048;
+    --ice:   #3a7a9a;
+    --pulse: #4db8d8;
+    --glow:  #6cd4f0;
+    --safe:  #42c87a;
+    --warn:  #e8a040;
+    --danger:#d84060;
+    --text:  #b8d4e0;
+    --sub:   #405868;
+  }
+  body { margin: 0; overflow: hidden; font-family: 'Syne', sans-serif; background: #020608; }
+  a-scene { width: 100vw !important; height: 100vh !important; }
+
+  /* grain */
+  body::after {
+    content:''; position:fixed; inset:0; z-index:999; pointer-events:none; opacity:.35;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+  }
+
+  /* vignette */
+  #vig { position:fixed; inset:0; z-index:190; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 50%, transparent 48%, rgba(2,6,8,.7) 100%); }
+
+  /* ── TOP BAR ── */
+  #topBar {
+    position:fixed; top:0; left:0; right:0; z-index:200; height:58px;
+    background:linear-gradient(to bottom, rgba(2,6,8,.93), transparent);
+    display:flex; align-items:center; justify-content:space-between; padding:0 28px;
+    backdrop-filter:blur(6px);
+  }
+  .tb-left  { display:flex; align-items:center; gap:14px; }
+  .tb-right { display:flex; align-items:center; gap:8px; }
+  .logo { font-size:17px; font-weight:800; letter-spacing:-.5px; color:#e0eef4; display:flex; align-items:center; gap:8px; }
+  .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--pulse); box-shadow:0 0 10px var(--pulse); animation:blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+  .badge {
+    font-family:'DM Mono',monospace; font-size:10px; letter-spacing:3px;
+    text-transform:uppercase; color:var(--sub); border:1px solid var(--rim);
+    padding:4px 12px; border-radius:20px; background:rgba(6,11,20,.8);
+  }
+  .tb-center {
+    position:absolute; left:50%; transform:translateX(-50%);
+    font-family:'DM Mono',monospace; font-size:11px; letter-spacing:4px;
+    text-transform:uppercase; color:var(--sub);
+  }
+  .icon-btn {
+    width:34px; height:34px; border-radius:10px;
+    background:rgba(8,17,30,.85); border:1px solid var(--rim);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:all .2s; color:var(--sub); font-size:14px;
+    backdrop-filter:blur(8px);
+  }
+  .icon-btn:hover { border-color:var(--pulse); color:var(--pulse); box-shadow:0 0 12px rgba(77,184,216,.2); }
+  .icon-btn.red:hover { border-color:var(--danger); color:var(--danger); }
+
+  /* ── ALTITUDE PILL ── */
+  #altPill {
+    position:fixed; top:66px; left:50%; transform:translateX(-50%); z-index:200;
+    font-family:'DM Mono',monospace; font-size:12px; letter-spacing:3px; color:var(--pulse);
+    background:rgba(6,11,20,.82); backdrop-filter:blur(8px);
+    border:1px solid var(--rim); border-radius:20px; padding:5px 18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  #altPill span { color:var(--sub); font-size:9px; letter-spacing:2px; }
+  .alt-dot { width:5px; height:5px; border-radius:50%; background:var(--warn); box-shadow:0 0 8px var(--warn); }
+
+  /* ── LEFT PANEL — level pips ── */
+  #leftPanel {
+    position:fixed; left:20px; top:50%; transform:translateY(-50%); z-index:200;
+    display:flex; flex-direction:column; gap:6px; align-items:center;
+  }
+  .level-pip {
+    width:5px; height:30px; border-radius:3px; background:var(--rim);
+    transition:all .4s; cursor:pointer;
+  }
+  .level-pip.done    { background:rgba(77,184,216,.5); }
+  .level-pip.current { background:var(--pulse); box-shadow:0 0 10px rgba(77,184,216,.6); }
+  .pip-label { font-family:'DM Mono',monospace; font-size:8px; letter-spacing:1px; color:var(--sub); text-transform:uppercase; margin-top:4px; }
+
+  /* ── RIGHT PANEL ── */
+  #rightPanel {
+    position:fixed; right:20px; top:50%; transform:translateY(-50%); z-index:200;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .stat-card {
+    background:rgba(6,11,20,.85); backdrop-filter:blur(16px);
+    border:1px solid var(--rim); border-radius:14px; padding:14px 16px; min-width:114px;
+    transition:border-color .3s;
+  }
+  .stat-card:hover { border-color:var(--mist); }
+  .slbl { font-family:'DM Mono',monospace; font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--sub); margin-bottom:6px; }
+  .sval { font-family:'DM Mono',monospace; font-size:21px; color:var(--text); font-weight:500; line-height:1; }
+  .sval.g { color:var(--safe); }
+  .sval.a { color:var(--warn); }
+  .sval.b { color:var(--pulse); }
+  .mbar { height:3px; background:var(--rim); border-radius:2px; margin-top:8px; overflow:hidden; }
+  .mbar-fill { height:100%; border-radius:2px; transition:width 1.2s ease; }
+  .fg { background:linear-gradient(to right,#2a9a5a,var(--safe)); }
+  .fb { background:linear-gradient(to right,var(--ice),var(--pulse)); }
+  .fa { background:linear-gradient(to right,#c06a20,var(--warn)); }
+
+  /* ── BOTTOM STRIP ── */
+  #bottomStrip {
+    position:fixed; bottom:0; left:0; right:0; z-index:200; height:72px;
+    background:linear-gradient(to top, rgba(2,6,8,.95), transparent);
+    display:flex; align-items:center; justify-content:center; gap:14px; padding:0 28px;
+  }
+  .breath-widget {
+    display:flex; align-items:center; gap:12px;
+    background:rgba(6,11,20,.85); backdrop-filter:blur(16px);
+    border:1px solid var(--rim); border-radius:40px; padding:11px 22px;
+  }
+  .orb-wrap { position:relative; width:28px; height:28px; }
+  .orb-wrap svg { position:absolute; inset:0; width:100%; height:100%; animation:orbPulse 4s ease-in-out infinite; }
+  @keyframes orbPulse { 0%,100%{transform:scale(.85);opacity:.6} 50%{transform:scale(1.15);opacity:1} }
+  .bphase { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--pulse); }
+  .bcnt   { font-family:'DM Mono',monospace; font-size:18px; color:var(--text); min-width:18px; text-align:center; }
+
+  .msg-widget {
+    flex:1; max-width:380px;
+    background:rgba(6,11,20,.85); backdrop-filter:blur(16px);
+    border:1px solid var(--rim); border-radius:12px; padding:11px 20px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .micon { font-size:16px; flex-shrink:0; }
+  .mtxt  { font-size:13px; color:var(--text); line-height:1.4; transition:opacity .5s; }
+  .mtxt.fade { opacity:0; }
+
+  .ctrl-hint {
+    background:rgba(6,11,20,.85); backdrop-filter:blur(16px);
+    border:1px solid var(--rim); border-radius:40px; padding:11px 18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .key { font-family:'DM Mono',monospace; font-size:9px; padding:3px 7px; border:1px solid var(--mist); border-radius:5px; color:var(--sub); background:rgba(22,32,53,.6); }
+  .klbl{ font-family:'DM Mono',monospace; font-size:9px; color:var(--sub); letter-spacing:1px; }
+
+  /* ── LEVEL SELECTOR ── */
+  #levelSel {
+    position:fixed; bottom:82px; left:50%; transform:translateX(-50%); z-index:200;
+    background:rgba(6,11,20,.9); backdrop-filter:blur(16px);
+    border:1px solid var(--rim); border-radius:14px; padding:12px 20px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .lsel-lbl { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--sub); }
+  .lsel-btn {
+    width:28px; height:28px; border-radius:8px; border:1px solid var(--rim);
+    background:rgba(10,17,32,.8); color:var(--sub); cursor:pointer; font-size:11px;
+    font-family:'DM Mono',monospace; font-weight:500; transition:all .2s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .lsel-btn:hover  { border-color:var(--pulse); color:var(--pulse); }
+  .lsel-btn.active { border-color:var(--pulse); background:rgba(77,184,216,.12); color:var(--glow); }
+
+  /* ── PAUSE OVERLAY ── */
+  #pauseOvl {
+    position:fixed; inset:0; z-index:500;
+    background:rgba(2,6,8,.92); backdrop-filter:blur(24px);
+    display:none; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+  }
+  #pauseOvl.show { display:flex; }
+  .ptitle { font-size:52px; font-weight:800; color:#e0eef4; letter-spacing:-2px; }
+  .psub   { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:4px; color:var(--sub); text-transform:uppercase; margin-bottom:10px; }
+  .porb   { width:64px; height:64px; border-radius:50%; border:1px solid rgba(77,184,216,.25); display:flex; align-items:center; justify-content:center; position:relative; }
+  .porb::before,.porb::after { content:''; position:absolute; border-radius:50%; border:1px solid rgba(77,184,216,.12); animation:ripple 3s ease-out infinite; }
+  .porb::before { inset:-12px; animation-delay:.4s; }
+  .porb::after  { inset:-24px; animation-delay:.8s; }
+  @keyframes ripple { 0%{opacity:.6;transform:scale(.9)} 100%{opacity:0;transform:scale(1.2)} }
+  .porb-in { width:30px; height:30px; border-radius:50%; background:radial-gradient(circle,rgba(77,184,216,.4),rgba(77,184,216,.05)); animation:orbPulse 3s ease-in-out infinite; }
+  .pmsg   { font-size:14px; color:var(--text); font-family:'DM Mono',monospace; font-style:italic; max-width:320px; text-align:center; line-height:1.7; }
+  .pbtns  { display:flex; gap:12px; margin-top:8px; }
+  .pbtn   { padding:13px 30px; border-radius:50px; font-family:'Syne',sans-serif; font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; transition:all .25s; border:none; }
+  .pb-res { background:linear-gradient(135deg,var(--ice),var(--pulse)); color:var(--void); }
+  .pb-res:hover { box-shadow:0 8px 30px rgba(77,184,216,.4); transform:translateY(-1px); }
+  .pb-ext { background:transparent; border:1px solid rgba(216,64,96,.4); color:var(--danger); }
+  .pb-ext:hover { background:rgba(216,64,96,.1); }
+
+  /* crosshair */
+  #xhair { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:300; pointer-events:none; }
+  #xhair::before,#xhair::after { content:''; position:absolute; background:rgba(255,255,255,.2); border-radius:1px; }
+  #xhair::before { width:1px; height:16px; left:50%; top:-8px; }
+  #xhair::after  { width:16px; height:1px; top:50%; left:-8px; }
+
+  /* wind shake */
+  @keyframes windShake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(.4px,-.3px)} 75%{transform:translate(-.3px,.4px)} }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topBar">
+  <div class="tb-left">
+    <div class="logo"><div class="logo-dot"></div>FearLess</div>
+    <div class="badge">Heights · Level <span id="badgeLvl">3</span></div>
+  </div>
+  <div class="tb-center">HIGHRISE ROOFTOP SIMULATION</div>
+  <div class="tb-right">
+    <div class="icon-btn" onclick="togglePause()">⏸</div>
+    <div class="icon-btn red" onclick="exitSession()">✕</div>
+  </div>
+</div>
+
+<!-- ALTITUDE PILL -->
+<div id="altPill">
+  <div class="alt-dot"></div>
+  <span>ALTITUDE</span>
+  <strong id="altNum">120 m</strong>
+  <span>·</span>
+  <strong id="floorNum">40F</strong>
+</div>
+
+<!-- LEFT — level pips -->
+<div id="leftPanel">
+  <div class="pip-label">LVL</div>
+</div>
+
+<!-- RIGHT — stats -->
+<div id="rightPanel">
+  <div class="stat-card">
+    <div class="slbl">Altitude</div>
+    <div class="sval b" id="altStat">120m</div>
+  </div>
+  <div class="stat-card">
+    <div class="slbl">Anxiety</div>
+    <div class="sval a" id="anxStat">5.2</div>
+    <div class="mbar"><div class="mbar-fill fa" id="anxBar" style="width:52%"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="slbl">Comfort</div>
+    <div class="sval g" id="comStat">48%</div>
+    <div class="mbar"><div class="mbar-fill fg" id="comBar" style="width:48%"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="slbl">Session</div>
+    <div class="sval b" id="sesTimer">00:00</div>
+    <div class="mbar"><div class="mbar-fill fb" id="progBar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- BOTTOM STRIP -->
+<div id="bottomStrip">
+  <div class="breath-widget">
+    <div class="orb-wrap">
+      <svg viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="12" stroke="#4db8d8" stroke-width="1" stroke-dasharray="4 3" opacity=".6"/>
+        <circle cx="14" cy="14" r="6" fill="rgba(77,184,216,.2)" stroke="#4db8d8" stroke-width="1"/>
+      </svg>
+    </div>
+    <span class="bphase" id="bphase">Breathe In</span>
+    <span class="bcnt"   id="bcnt">4</span>
+  </div>
+  <div class="msg-widget">
+    <span class="micon" id="micon">🏙️</span>
+    <div class="mtxt"   id="mtxt">You are on the rooftop. Look around slowly — you are safe.</div>
+  </div>
+  <div class="ctrl-hint">
+    <span class="key">W A S D</span><span class="klbl">Move</span>
+    <span class="key">Mouse</span><span class="klbl">Look</span>
+    <span class="key">P</span><span class="klbl">Pause</span>
+  </div>
+</div>
+
+<!-- LEVEL SELECTOR -->
+<div id="levelSel"></div>
+
+<!-- VIGNETTE -->
+<div id="vig"></div>
+<!-- CROSSHAIR -->
+<div id="xhair"></div>
+
+<!-- PAUSE OVERLAY -->
+<div id="pauseOvl">
+  <div class="ptitle">Paused</div>
+  <div class="psub">Take a breath — you are in control</div>
+  <div class="porb"><div class="porb-in"></div></div>
+  <div class="pmsg" id="pmsg">"Feel your feet on the ground. You are stable and safe."</div>
+  <div class="pbtns">
+    <button class="pbtn pb-res" onclick="togglePause()">Resume Session</button>
+    <button class="pbtn pb-ext" onclick="exitSession()">Exit Safely</button>
+  </div>
+</div>
+
+<!-- ════════════════ A-FRAME ════════════════ -->
+<a-scene
+  vr-mode-ui="enabled:true"
+  loading-screen="backgroundColor:#020608;dotsColor:#4db8d8"
+  renderer="antialias:true;colorManagement:true;shadowMapEnabled:true"
+  shadow="type:pcfsoft"
+  fog="type:exponential;color:#a8c8e8;density:0.004">
+
+  <!-- ASSETS -->
+  <a-assets></a-assets>
+
+  <!-- ── CAMERA ── -->
+  <a-entity id="rig" position="0 121.7 0">
+    <a-camera id="cam"
+      look-controls="pointerLockEnabled:false"
+      wasd-controls="enabled:true;speed:3"
+      fov="80" near="0.1" far="3000">
+    </a-camera>
+  </a-entity>
+
+  <!-- ── SKY gradient ── -->
+  <a-sky id="skyEl" color="#87b8d8"></a-sky>
+
+  <!-- SUN -->
+  <a-light id="sun" type="directional" color="#fff5e0" intensity="1.1"
+    position="3 10 -5" cast-shadow="true"
+    shadow-camera-left="-200" shadow-camera-right="200"
+    shadow-camera-top="200"  shadow-camera-bottom="-200"
+    shadow-camera-far="800"  shadow-map-height="2048" shadow-map-width="2048">
+  </a-light>
+  <!-- Ambient sky light -->
+  <a-light type="ambient" color="#c8dce8" intensity="0.55"></a-light>
+  <!-- Blue sky fill -->
+  <a-light type="directional" color="#b0d0f0" intensity="0.3" position="-2 5 3"></a-light>
+
+  <!-- ════ SCENE ROOT ════ -->
+  <a-entity id="sceneRoot"></a-entity>
+
+</a-scene>
+
+<script>
+// ══════════════════════════════════
+//  CONFIG  (tweak per level)
+// ══════════════════════════════════
+const LEVELS = [
+  { alt:12,   floor:4,  roofW:28, roofD:20, railH:1.2, skyCol:'#b0d8f0', fogD:0.003, windAmt:0   },
+  { alt:30,   floor:10, roofW:24, roofD:18, railH:1.1, skyCol:'#9ccce8', fogD:0.004, windAmt:.05 },
+  { alt:60,   floor:20, roofW:20, roofD:16, railH:1.0, skyCol:'#88bce0', fogD:0.005, windAmt:.1  },
+  { alt:90,   floor:30, roofW:18, roofD:14, railH:0.95,skyCol:'#74acd8', fogD:0.006, windAmt:.15 },
+  { alt:120,  floor:40, roofW:16, roofD:12, railH:0.9, skyCol:'#609cc8', fogD:0.007, windAmt:.2  },
+  { alt:150,  floor:50, roofW:14, roofD:11, railH:0.85,skyCol:'#508cc0', fogD:0.008, windAmt:.25 },
+  { alt:200,  floor:67, roofW:12, roofD:10, railH:0.8, skyCol:'#4080b8', fogD:0.009, windAmt:.3  },
+  { alt:280,  floor:93, roofW:10, roofD:9,  railH:0.75,skyCol:'#3070a8', fogD:0.010, windAmt:.35 },
+  { alt:350,  floor:117,roofW:9,  roofD:8,  railH:0.7, skyCol:'#205898', fogD:0.012, windAmt:.4  },
+  { alt:450,  floor:150,roofW:8,  roofD:7,  railH:0.65,skyCol:'#0a3878', fogD:0.014, windAmt:.5  },
+];
+
+// ══════════════════════════════════
+//  STATE
+// ══════════════════════════════════
+let level     = 2;   // 0-indexed → Level 3
+let paused    = false;
+let sesSec    = 0;
+let timerID   = null;
+let anxiety   = 5.2;
+let comfort   = 48;
+let breathIdx = 0;
+let breathSec = 0;
+let bTimer    = null;
+let msgIdx    = 0;
+
+const breathPhases = [
+  { label:'Breathe In',  dur:4 },
+  { label:'Hold',        dur:4 },
+  { label:'Breathe Out', dur:6 },
+  { label:'Hold',        dur:2 },
+];
+
+const messages = [
+  { icon:'🏙️', text:'You are on the rooftop. Look around slowly — you are safe.' },
+  { icon:'🌬️', text:'Feel the wind. It is only air. You are stable.' },
+  { icon:'💙', text:'Look at the horizon, not down. Breathe slowly.' },
+  { icon:'🌤️', text:'The city below is far away. You are secure up here.' },
+  { icon:'✨', text:'Every second you stay is a victory. You are doing great.' },
+  { icon:'🌊', text:'Let the height become familiar. Fear fades with familiarity.' },
+  { icon:'🔭', text:'Notice the sky. Wide, open, beautiful — not threatening.' },
+  { icon:'💪', text:'Your body is strong. You are balanced and grounded.' },
+];
+
+const pauseMsgs = [
+  '"Feel your feet on the ground. You are stable and safe."',
+  '"Take three slow breaths. The height cannot harm you."',
+  '"You chose to be here. You can choose to continue."',
+  '"Look at the horizon. It is calm, steady, and beautiful."',
+];
+
+// ══════════════════════════════════
+//  BOOT
+// ══════════════════════════════════
+window.addEventListener('load', () => {
+  buildLevelSelector();
+  buildLevelPips();
+  applyLevel(level);
+  startTimer();
+  startBreathing();
+  startMessages();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'p' || e.key === 'P') togglePause();
+});
+
+// ══════════════════════════════════
+//  LEVEL SELECTOR UI
+// ══════════════════════════════════
+function buildLevelSelector() {
+  const c = document.getElementById('levelSel');
+  c.innerHTML = '<span class="lsel-lbl">LEVEL &nbsp;</span>';
+  for (let i = 0; i < 10; i++) {
+    const b = document.createElement('div');
+    b.className = 'lsel-btn' + (i === level ? ' active' : '');
+    b.textContent = i + 1;
+    b.onclick = () => changeLevel(i);
+    b.id = 'lb' + i;
+    c.appendChild(b);
+  }
+}
+
+function buildLevelPips() {
+  const c = document.getElementById('leftPanel');
+  // clear old pips
+  c.querySelectorAll('.level-pip').forEach(p => p.remove());
+  for (let i = 9; i >= 0; i--) {   // render top=high bottom=low
+    const p = document.createElement('div');
+    p.className = 'level-pip' + (i < level ? ' done' : i === level ? ' current' : '');
+    p.onclick   = () => changeLevel(i);
+    c.insertBefore(p, c.querySelector('.pip-label'));
+  }
+}
+
+function changeLevel(idx) {
+  level = idx;
+  applyLevel(idx);
+  buildLevelPips();
+  // update selector active
+  document.querySelectorAll('.lsel-btn').forEach((b,i) => b.classList.toggle('active', i === idx));
+}
+
+// ══════════════════════════════════
+//  APPLY LEVEL — rebuild 3D scene
+// ══════════════════════════════════
+function applyLevel(idx) {
+  const cfg = LEVELS[idx];
+
+  // Update sky & fog
+  document.getElementById('skyEl').setAttribute('color', cfg.skyCol);
+  document.querySelector('a-scene').setAttribute('fog', `type:exponential;color:${cfg.skyCol};density:${cfg.fogD}`);
+
+  // Update camera height
+  document.getElementById('rig').setAttribute('position', `0 ${cfg.alt + 1.7} 0`);
+
+  // Update HUD
+  document.getElementById('altNum').textContent   = cfg.alt + ' m';
+  document.getElementById('floorNum').textContent = cfg.floor + 'F';
+  document.getElementById('altStat').textContent  = cfg.alt + 'm';
+  document.getElementById('badgeLvl').textContent = idx + 1;
+
+  // Recalculate starting anxiety for this level
+  anxiety = 2 + idx * 0.8 + (Math.random() - 0.5) * 0.4;
+  comfort = Math.max(15, 90 - idx * 8 - Math.random() * 5);
+  updateStats();
+
+  // Rebuild geometry
+  buildScene(cfg, idx);
+}
+
+// ══════════════════════════════════
+//  3D SCENE BUILDER
+// ══════════════════════════════════
+function el(tag, attrs) {
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  return e;
+}
+
+function buildScene(cfg, idx) {
+  const root = document.getElementById('sceneRoot');
+  while (root.firstChild) root.removeChild(root.firstChild);
+
+  const Y = cfg.alt;        // rooftop surface Y
+  const W = cfg.roofW;
+  const D = cfg.roofD;
+  const rH = cfg.railH;
+
+  // ── ROOFTOP SURFACE ──
+  // Main concrete deck
+  root.appendChild(el('a-box',{
+    position:`0 ${Y - 0.15} 0`,
+    width: W, height: 0.3, depth: D,
+    color:'#909098',
+    shadow:'cast:true;receive:true'
+  }));
+  // Darker perimeter strip
+  root.appendChild(el('a-box',{
+    position:`0 ${Y - 0.02} 0`,
+    width: W, height:0.02, depth: D,
+    color:'#7a7a82', opacity:0.7
+  }));
+  // Expansion joint lines
+  for (let j = -Math.floor(D/2)+1; j < Math.floor(D/2); j++) {
+    root.appendChild(el('a-box',{
+      position:`0 ${Y + 0.01} ${j * 2}`,
+      width: W, height:0.02, depth:0.04, color:'#606068'
+    }));
+  }
+  for (let j = -Math.floor(W/2)+1; j < Math.floor(W/2); j++) {
+    root.appendChild(el('a-box',{
+      position:`${j * 2} ${Y + 0.01} 0`,
+      width:0.04, height:0.02, depth: D, color:'#606068'
+    }));
+  }
+
+  // ── PARAPET / RAILING ──
+  const pW = 0.25;
+  // North
+  root.appendChild(el('a-box',{ position:`0 ${Y + rH/2} ${-D/2}`,    width:W,   height:rH, depth:pW, color:'#c0c0c8', shadow:'cast:true' }));
+  // South
+  root.appendChild(el('a-box',{ position:`0 ${Y + rH/2} ${D/2}`,     width:W,   height:rH, depth:pW, color:'#b8b8c0' }));
+  // East
+  root.appendChild(el('a-box',{ position:`${W/2} ${Y + rH/2} 0`,     width:pW,  height:rH, depth:D,  color:'#c0c0c8', shadow:'cast:true' }));
+  // West
+  root.appendChild(el('a-box',{ position:`${-W/2} ${Y + rH/2} 0`,    width:pW,  height:rH, depth:D,  color:'#c0c0c8' }));
+
+  // Glass safety panels (higher levels)
+  if (idx >= 4) {
+    const gOpacity = 0.18 + idx * 0.02;
+    root.appendChild(el('a-box',{ position:`0 ${Y + rH + 0.5} ${-D/2}`, width:W-0.4, height:1.0, depth:0.04, color:'#a8d8f0', opacity:gOpacity, transparent:true }));
+    root.appendChild(el('a-box',{ position:`${W/2} ${Y + rH + 0.5} 0`,  width:0.04,  height:1.0, depth:D-0.4, color:'#a8d8f0', opacity:gOpacity, transparent:true }));
+    root.appendChild(el('a-box',{ position:`${-W/2} ${Y + rH + 0.5} 0`, width:0.04,  height:1.0, depth:D-0.4, color:'#a8d8f0', opacity:gOpacity, transparent:true }));
+  }
+
+  // ── ROOFTOP STRUCTURES ──
+  // HVAC unit
+  root.appendChild(el('a-box',{ position:`${-W/2+2.5} ${Y+0.8} ${-D/2+2.5}`, width:2.5, height:1.6, depth:1.8, color:'#808088', shadow:'cast:true' }));
+  root.appendChild(el('a-cylinder',{ position:`${-W/2+2.5} ${Y+1.85} ${-D/2+2.5}`, radius:0.35, height:0.25, color:'#909098' }));
+  // Vent grilles on HVAC
+  root.appendChild(el('a-box',{ position:`${-W/2+3.76} ${Y+0.8} ${-D/2+2.5}`, width:0.04, height:1.2, depth:1.4, color:'#6a6a72' }));
+
+  // Stairwell access box
+  root.appendChild(el('a-box',{ position:`${W/2-2} ${Y+1.4} ${D/2-2.5}`, width:3.2, height:2.8, depth:2.5, color:'#888890', shadow:'cast:true' }));
+  // Door on stairwell
+  root.appendChild(el('a-box',{ position:`${W/2-2} ${Y+0.8} ${D/2-1.24}`, width:1.0, height:1.9, depth:0.06, color:'#606070' }));
+  root.appendChild(el('a-sphere',{ position:`${W/2-1.54} ${Y+0.75} ${D/2-1.2}`, radius:0.05, color:'#c8a060' }));
+
+  // Satellite dish
+  root.appendChild(el('a-cylinder',{ position:`${W/2-4} ${Y+0.6} ${-D/2+3}`, radius:0.05, height:1.2, color:'#a0a0a8' }));
+  root.appendChild(el('a-sphere',{   position:`${W/2-4} ${Y+1.2} ${-D/2+3}`, radius:0.45, color:'#c0c0c8', segments:8 }));
+
+  // Water tower (taller buildings)
+  if (idx >= 3) {
+    const wx = W/2 - 1.5, wz = -D/2 + 1.5;
+    root.appendChild(el('a-cylinder',{ position:`${wx} ${Y+2.2} ${wz}`, radius:1.0, height:2.4, color:'#8a6040', shadow:'cast:true' }));
+    root.appendChild(el('a-cone',{     position:`${wx} ${Y+3.6} ${wz}`, 'radius-bottom':1.1, 'radius-top':0.1, height:1.4, color:'#6a4820' }));
+    // Legs
+    [45,135,225,315].forEach(a => {
+      const ax = wx + Math.cos(a*Math.PI/180)*0.9, az = wz + Math.sin(a*Math.PI/180)*0.9;
+      root.appendChild(el('a-cylinder',{ position:`${ax} ${Y+0.9} ${az}`, radius:0.05, height:1.8, rotation:`0 0 ${15*Math.sign(Math.cos(a*Math.PI/180))}`, color:'#7a5030' }));
+    });
+  }
+
+  // Antenna mast (high levels)
+  if (idx >= 5) {
+    root.appendChild(el('a-cylinder',{ position:`0 ${Y+6} 0`, radius:0.06, height:12, color:'#b0b0b8' }));
+    root.appendChild(el('a-cylinder',{ position:`0 ${Y+12.2} 0`, radius:0.04, height:0.4, color:'#e04040' }));
+    root.appendChild(el('a-light',{    position:`0 ${Y+12.4} 0`, type:'point', color:'#ff2020', intensity:0.6, distance:8 }));
+    // Cross arms
+    root.appendChild(el('a-box',{ position:`0 ${Y+10} 0`, width:3, height:0.06, depth:0.06, color:'#b0b0b8' }));
+    root.appendChild(el('a-box',{ position:`0 ${Y+8}  0`, width:2, height:0.05, depth:0.05, color:'#b0b0b8' }));
+  }
+
+  // ── CITY BELOW ──
+  buildCity(root, Y, idx);
+
+  // ── DISTANT SKYLINE ──
+  buildSkyline(root, Y, idx);
+
+  // ── GROUND PLANE ──
+  root.appendChild(el('a-plane',{
+    position:`0 0 0`, rotation:'-90 0 0',
+    width:3000, height:3000, color:'#2a3828',
+    shadow:'receive:true'
+  }));
+
+  // ── CLOUDS ──
+  buildClouds(root, Y, idx);
+
+  // ── MAIN TOWER BODY (visible from side / neighbour windows) ──
+  buildTowerBody(root, Y, W, D, idx);
+}
+
+// ── CITY GRID ──
+function buildCity(root, Y, idx) {
+  const spread = 12;
+  const seed   = [3,7,2,9,5,4,8,1,6,2,7,4,9,3,5,8,2,6,1,4,7,3,8,5,2,9,6,1,4,7];
+  let si = 0;
+  for (let bx = -9; bx <= 9; bx++) {
+    for (let bz = -9; bz <= 9; bz++) {
+      if (Math.abs(bx) <= 1 && Math.abs(bz) <= 1) continue;
+      const s  = seed[si++ % seed.length];
+      const bh = 6 + s * 18 + idx * 3;
+      const bw = 8 + (s % 4);
+      const bd = 8 + (s % 3);
+      const bx2 = bx * spread + (s % 4) - 2;
+      const bz2 = bz * spread + (s % 3) - 1;
+      const hue = 200 + (s * 7) % 40;
+      const lit = 28 + (s * 5) % 25;
+      root.appendChild(el('a-box',{
+        position:`${bx2} ${bh/2} ${bz2}`,
+        width:bw, height:bh, depth:bd,
+        color:`hsl(${hue},12%,${lit}%)`,
+        shadow:'cast:true;receive:true'
+      }));
+      // Rooftop water tower or detail
+      if (s > 6) {
+        root.appendChild(el('a-box',{
+          position:`${bx2} ${bh + 0.5} ${bz2}`,
+          width:bw * 0.6, height:1.0, depth:bd * 0.6,
+          color:`hsl(${hue},10%,${lit+5}%)`
+        }));
+      }
+      // Random window lights on taller buildings
+      if (bh > 40 && s % 3 === 0) {
+        for (let wy = 10; wy < bh - 5; wy += 6) {
+          root.appendChild(el('a-plane',{
+            position:`${bx2 + bw/2 + 0.01} ${wy} ${bz2}`,
+            rotation:'0 90 0', width:bw*0.7, height:3,
+            color:'#ffe8a0', opacity:0.06
+          }));
+        }
+      }
+    }
+  }
+
+  // Streets (dark strips between buildings)
+  for (let i = -9; i <= 9; i++) {
+    root.appendChild(el('a-plane',{
+      position:`${i*spread} 0.05 0`, rotation:'-90 0 0',
+      width:3, height:spread*20, color:'#1a1e1a'
+    }));
+    root.appendChild(el('a-plane',{
+      position:`0 0.05 ${i*spread}`, rotation:'-90 0 0',
+      width:spread*20, height:3, color:'#1a1e1a'
+    }));
+  }
+}
+
+// ── DISTANT SKYLINE ──
+function buildSkyline(root, Y, idx) {
+  const dist  = 600;
+  const count = 32;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2;
+    const r     = dist + (i % 5) * 60;
+    const x     = Math.cos(angle) * r;
+    const z     = Math.sin(angle) * r;
+    const h     = 60 + (i % 7) * 50;
+    const w     = 20 + (i % 4) * 15;
+    root.appendChild(el('a-box',{
+      position:`${x} ${h/2} ${z}`,
+      width:w, height:h, depth:w,
+      color:`hsl(${210 + i*3},8%,${20 + i%15}%)`
+    }));
+  }
+}
+
+// ── CLOUDS ──
+function buildClouds(root, Y, idx) {
+  const cloudY = Y + 20 + idx * 15;
+  const clusters = [
+    [-80, 60, -120], [100, 40, -200], [-150, 80, 80],
+    [200, 30, 150],  [-60, 90, 200],  [120, 60, -80],
+    [-200,50, -60],  [60,  70, 260],
+  ];
+  clusters.forEach(([cx, cy, cz]) => {
+    const parts = 4 + Math.floor(Math.random() * 4);
+    for (let p = 0; p < parts; p++) {
+      const ox = (Math.random() - 0.5) * 30;
+      const oy = (Math.random() - 0.5) * 8;
+      const oz = (Math.random() - 0.5) * 18;
+      const r  = 10 + Math.random() * 14;
+      root.appendChild(el('a-sphere',{
+        position:`${cx+ox} ${cloudY+cy+oy} ${cz+oz}`,
+        radius:r, color:'#ffffff', opacity:0.75, segments:8,
+        shadow:'cast:true'
+      }));
+    }
+  });
+}
+
+// ── TOWER BODY ──
+function buildTowerBody(root, Y, W, D, idx) {
+  const floors = LEVELS[idx].floor;
+  const floorH = 3.2;
+  const totalH = floors * floorH;
+
+  // Main structure
+  root.appendChild(el('a-box',{
+    position:`0 ${totalH/2} 0`,
+    width:W + 1.5, height:totalH, depth:D + 1.5,
+    color:'#7a7a88',
+    shadow:'cast:true;receive:true'
+  }));
+
+  // Window bands (every 2 floors)
+  for (let f = 1; f < floors; f += 2) {
+    const fy = f * floorH + floorH / 2;
+    // Front face windows
+    root.appendChild(el('a-box',{
+      position:`0 ${fy} ${(D+1.5)/2 + 0.02}`,
+      width:W, height:floorH * 1.6, depth:0.04,
+      color:'#6090b0', opacity:0.35, transparent:true
+    }));
+    // Back face
+    root.appendChild(el('a-box',{
+      position:`0 ${fy} ${-(D+1.5)/2 - 0.02}`,
+      width:W, height:floorH * 1.6, depth:0.04,
+      color:'#5080a0', opacity:0.3, transparent:true
+    }));
+    // Side faces
+    root.appendChild(el('a-box',{
+      position:`${(W+1.5)/2 + 0.02} ${fy} 0`,
+      width:0.04, height:floorH * 1.6, depth:D,
+      color:'#5888a8', opacity:0.3, transparent:true
+    }));
+    root.appendChild(el('a-box',{
+      position:`${-(W+1.5)/2 - 0.02} ${fy} 0`,
+      width:0.04, height:floorH * 1.6, depth:D,
+      color:'#5888a8', opacity:0.3, transparent:true
+    }));
+  }
+
+  // Floor slab lines
+  for (let f = 1; f < floors; f++) {
+    const fy = f * floorH;
+    root.appendChild(el('a-box',{
+      position:`${(W+1.5)/2 + 0.03} ${fy} 0`,
+      width:0.07, height:0.25, depth:D+1.5,
+      color:'#909098'
+    }));
+    root.appendChild(el('a-box',{
+      position:`${-(W+1.5)/2 - 0.03} ${fy} 0`,
+      width:0.07, height:0.25, depth:D+1.5,
+      color:'#909098'
+    }));
+    root.appendChild(el('a-box',{
+      position:`0 ${fy} ${(D+1.5)/2 + 0.03}`,
+      width:W+1.5, height:0.25, depth:0.07,
+      color:'#909098'
+    }));
+    root.appendChild(el('a-box',{
+      position:`0 ${fy} ${-(D+1.5)/2 - 0.03}`,
+      width:W+1.5, height:0.25, depth:0.07,
+      color:'#909098'
+    }));
+  }
+}
+
+// ══════════════════════════════════
+//  TIMER
+// ══════════════════════════════════
+function startTimer() {
+  timerID = setInterval(() => {
+    if (paused) return;
+    sesSec++;
+    const m = String(Math.floor(sesSec/60)).padStart(2,'0');
+    const s = String(sesSec%60).padStart(2,'0');
+    document.getElementById('sesTimer').textContent = `${m}:${s}`;
+    document.getElementById('progBar').style.width  = Math.min(100, sesSec/300*100) + '%';
+
+    if (sesSec % 10 === 0) {
+      anxiety = Math.max(0.5, anxiety - 0.04 + (Math.random()-.6)*.08);
+      comfort = Math.min(98, comfort + (Math.random()>.45 ? .4 : 0));
+      updateStats();
+    }
+  }, 1000);
+}
+
+function updateStats() {
+  const av = document.getElementById('anxStat');
+  av.textContent = anxiety.toFixed(1);
+  av.className   = 'sval ' + (anxiety < 3 ? 'g' : anxiety < 6 ? 'a' : '');
+  document.getElementById('anxBar').style.width = (anxiety*10) + '%';
+  document.getElementById('comStat').textContent = Math.round(comfort) + '%';
+  document.getElementById('comBar').style.width  = comfort + '%';
+}
+
+// ══════════════════════════════════
+//  BREATHING
+// ══════════════════════════════════
+function startBreathing() { runBreath(); }
+function runBreath() {
+  const p = breathPhases[breathIdx];
+  document.getElementById('bphase').textContent = p.label;
+  let c = p.dur;
+  document.getElementById('bcnt').textContent = c;
+  clearInterval(bTimer);
+  bTimer = setInterval(() => {
+    if (paused) return;
+    c--;
+    document.getElementById('bcnt').textContent = c;
+    if (c <= 0) {
+      clearInterval(bTimer);
+      breathIdx = (breathIdx + 1) % breathPhases.length;
+      runBreath();
+    }
+  }, 1000);
+}
+
+// ══════════════════════════════════
+//  MESSAGES
+// ══════════════════════════════════
+function startMessages() {
+  setInterval(() => {
+    if (paused) return;
+    const el = document.getElementById('mtxt');
+    el.classList.add('fade');
+    setTimeout(() => {
+      msgIdx = (msgIdx + 1) % messages.length;
+      document.getElementById('micon').textContent = messages[msgIdx].icon;
+      el.textContent = messages[msgIdx].text;
+      el.classList.remove('fade');
+    }, 500);
+  }, 7000);
+}
+
+// ══════════════════════════════════
+//  PAUSE
+// ══════════════════════════════════
+function togglePause() {
+  paused = !paused;
+  document.getElementById('pauseOvl').classList.toggle('show', paused);
+  if (paused) document.getElementById('pmsg').textContent = pauseMsgs[Math.floor(Math.random()*pauseMsgs.length)];
+}
+
+// ══════════════════════════════════
+//  EXIT
+// ══════════════════════════════════
+function exitSession() {
+  clearInterval(timerID); clearInterval(bTimer);
+  const m = String(Math.floor(sesSec/60)).padStart(2,'0');
+  const s = String(sesSec%60).padStart(2,'0');
+  document.body.innerHTML = `
+    <div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      font-family:'Syne',sans-serif;color:#b8d4e0;gap:18px;
+      background:radial-gradient(ellipse at 50% 38%, #06111e 0%, #020608 100%);">
+      <div style="font-size:50px;font-weight:800;color:#e0eef4;letter-spacing:-2px;">Session Complete</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:5px;color:#405868;text-transform:uppercase;">
+        Heights · Level ${level+1} · ${LEVELS[level].alt}m
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0;width:min(460px,90vw)">
+        ${sb('Duration',`${m}:${s}`,'#4db8d8')}
+        ${sb('Anxiety',anxiety.toFixed(1),'#42c87a')}
+        ${sb('Comfort',Math.round(comfort)+'%','#4db8d8')}
+      </div>
+      <div style="font-size:13px;color:#405868;font-family:'DM Mono',monospace;max-width:300px;text-align:center;line-height:1.9;">
+        You faced the height and stayed.<br>That is genuine courage.
+      </div>
+      <button onclick="location.reload()" style="
+        margin-top:12px;padding:13px 34px;border-radius:50px;border:none;
+        background:linear-gradient(135deg,#3a7a9a,#4db8d8);
+        font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+        letter-spacing:2px;text-transform:uppercase;color:#020608;cursor:pointer;">
+        New Session
+      </button>
+    </div>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono&display=swap" rel="stylesheet">`;
+}
+function sb(l,v,c) {
+  return `<div style="background:rgba(8,17,30,.85);border:1px solid #102030;border-radius:12px;padding:18px;text-align:center;">
+    <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:#405868;text-transform:uppercase;margin-bottom:8px">${l}</div>
+    <div style="font-family:'DM Mono',monospace;font-size:24px;color:${c}">${v}</div>
+  </div>`;
+}
+</script>
+</body>
+</html>
